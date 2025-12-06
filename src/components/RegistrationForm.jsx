@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send } from 'lucide-react';
+import { Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 import './RegistrationForm.css';
 
 const RegistrationForm = () => {
+    const form = useRef();
+    const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState(null); // 'success' | 'error' | null
+
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -24,9 +29,34 @@ const RegistrationForm = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Handle form submission logic here
-        console.log('Form submitted:', formData);
-        alert('Thank you for registering! We will contact you shortly.');
+        setLoading(true);
+        setStatus(null);
+
+        // REPLACE THESE WITH YOUR ACTUAL EMAILJS KEYS
+        // Sign up at https://www.emailjs.com/
+        const SERVICE_ID = 'service_ewk3wxq';
+        const TEMPLATE_ID = 'template_kx1m8lb';
+        const PUBLIC_KEY = 'XnAQji_GnJut5IA3d';
+
+        emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, form.current, PUBLIC_KEY)
+            .then((result) => {
+                console.log(result.text);
+                setLoading(false);
+                setStatus('success');
+                setFormData({
+                    fullName: '',
+                    email: '',
+                    whatsapp: '',
+                    language: 'English',
+                    track: 'TEF Canada',
+                    classType: 'Group'
+                });
+                setTimeout(() => setStatus(null), 5000);
+            }, (error) => {
+                console.log(error.text);
+                setLoading(false);
+                setStatus('error');
+            });
     };
 
     return (
@@ -44,7 +74,7 @@ const RegistrationForm = () => {
                         <p className="text-gray-600">Book your free demo class today.</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="registration-form">
+                    <form ref={form} onSubmit={handleSubmit} className="registration-form">
                         <div className="form-group">
                             <label htmlFor="fullName">Full Name</label>
                             <input
@@ -117,6 +147,8 @@ const RegistrationForm = () => {
 
                         <div className="form-group">
                             <label>Class Type</label>
+                            {/* Hidden input to send classType via EmailJS */}
+                            <input type="hidden" name="classType" value={formData.classType} />
                             <div className="toggle-container">
                                 <button
                                     type="button"
@@ -135,9 +167,40 @@ const RegistrationForm = () => {
                             </div>
                         </div>
 
-                        <button type="submit" className="submit-btn">
-                            Book Free Demo <Send size={18} />
+                        <button
+                            type="submit"
+                            className="submit-btn"
+                            disabled={loading}
+                            style={{ opacity: loading ? 0.7 : 1 }}
+                        >
+                            {loading ? (
+                                <>Sending... <Loader2 className="animate-spin" size={18} /></>
+                            ) : (
+                                <>Book Free Demo <Send size={18} /></>
+                            )}
                         </button>
+
+                        {status === 'success' && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-4 bg-green-50 text-green-700 rounded-lg flex items-center gap-2 mt-4"
+                            >
+                                <CheckCircle size={20} />
+                                <span>Request sent successfully! We'll contact you soon.</span>
+                            </motion.div>
+                        )}
+
+                        {status === 'error' && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-4 bg-red-50 text-red-700 rounded-lg flex items-center gap-2 mt-4"
+                            >
+                                <AlertCircle size={20} />
+                                <span>Something went wrong. Please try again or contact us on WhatsApp.</span>
+                            </motion.div>
+                        )}
                     </form>
                 </motion.div>
             </div>
